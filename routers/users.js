@@ -62,4 +62,51 @@ router.post('/', async (req, res) => {
         res.status(500).json({ message: 'Failed to create user' });
     }
 });
+
+router.delete('/:id', async (req, res) => {
+    try {
+        const _id = toObejctId(req.params.id);
+        if (!_id) return res.status(400).json({ message: 'Invalid id' });
+        const result = await users().deleteOne({ _id });
+        if (result.deleteCount === 0)
+            return res.status(404).json({ message: 'User not found' });
+        res.status(204).end();
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.put('/:id', async (req, res, next) => {
+    try {
+        const _id = toObejctId(id);
+        if (!_id) return res.status(400).json({ message: 'invalid id' });
+
+        const { name, email } = req.body ?? {};
+
+        if (!name || typeof name !== 'string' || !name.trim()) {
+            return res.status(400).json({ message: 'Name is required!' });
+        }
+        if (!email || typeof email !== 'string' || !email.includes('@')) {
+            return res.status(400).json({ message: 'Email is required!' });
+        }
+
+        const result = await users().findOneAndUpdate(
+            { _id },
+            {
+                $set: {
+                    name: name.trim(),
+                    email: email.trim().toLowerCase(),
+                    updatedAt: new Date(),
+                },
+            },
+            { returnDocument: 'after' },
+        );
+        if (!result)
+            return res.status(404).json({ message: 'User not found!' });
+        res.json(result);
+    } catch (err) {
+        next(err);
+    }
+});
+
 export default router;
